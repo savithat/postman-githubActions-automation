@@ -7,6 +7,12 @@ on:
     branches: [ "main" ] # Triggers automatically on PR
   workflow_dispatch:     # Allows manual trigger via the GitHub UI (like clicking "Build Now" in Jenkins)
 
+# ➕ ADD THIS SECTION: Grants necessary permissions for GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   test-api:
     runs-on: ubuntu-latest # Standard clean runner agent
@@ -27,12 +33,29 @@ jobs:
         run: |
           npx newman run "Booking_API_Workflow_postman_collection.json" \
             -r htmlextra \
-            --reporter-htmlextra-export api-test-report.html
+            --reporter-htmlextra-export index.html # 📝 CHANGE THIS to index.html so Pages serves it seamlessly
 
-      - name: Publish HTML Report
-        if: always() # Ensures report is saved even if API tests fail (Matches 'post { always { ... } }' in Jenkins)
+      - name: Publish HTML Report (Artifact)
+        if: always() 
         uses: actions/upload-artifact@v4
         with:
           name: Newman API Test Report
-          path: api-test-report.html
+          path: index.html
+
+      # ➕ ADD THIS STEP: Configures the runner context for Pages
+      - name: Setup Pages
+        if: always()
+        uses: actions/configure-pages@v4
+
+      # ➕ ADD THIS STEP: Uploads the index.html specifically formatted for Pages
+      - name: Upload Pages Artifact
+        if: always()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Tells GitHub to upload the folder containing your index.html
+
+      # ➕ ADD THIS STEP: Triggers the actual live web deployment
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: actions/deploy-pages@v4
 
