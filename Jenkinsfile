@@ -15,7 +15,7 @@ pipeline {
 
         stage('Install Newman & Reporter') {
             steps {
-                sh 'npm install newman newman-reporter-htmlextra'
+                sh 'npm install newman newman-reporter-htmlextra --legacy-peer-deps'
             }
         }
 
