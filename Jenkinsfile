@@ -22,7 +22,7 @@ pipeline {
         stage('Run Postman Collection') {
             steps {
                 // Simplified with npx to reliably execute local node_modules binaries on macOS
-                sh 'npx newman run "Booking API Workflow.json" -r htmlextra --reporter-htmlextra-export api-test-report.html'
+                sh 'npx newman run "Booking_API_Workflow_postman_collection.json" -r htmlextra --reporter-htmlextra-export api-test-report.html'
             }
         }
     }
