@@ -1,0 +1,38 @@
+name: Run Postman Collection
+
+on:
+  push:
+    branches: [ "main" ] # Triggers automatically on push
+  pull_request:
+    branches: [ "main" ] # Triggers automatically on PR
+  workflow_dispatch:     # Allows manual trigger via the GitHub UI (like clicking "Build Now" in Jenkins)
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest # Standard clean runner agent
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # LTS stable version for CI runners
+
+      - name: Install Newman & Reporter
+        run: npm install newman newman-reporter-htmlextra --legacy-peer-deps
+
+      - name: Run Postman Collection
+        run: |
+          npx newman run "Booking_API_Workflow_postman_collection.json" \
+            -r htmlextra \
+            --reporter-htmlextra-export api-test-report.html
+
+      - name: Publish HTML Report
+        if: always() # Ensures report is saved even if API tests fail (Matches 'post { always { ... } }' in Jenkins)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Newman API Test Report
+          path: api-test-report.html
+
