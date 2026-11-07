@@ -2,10 +2,10 @@ name: Run Postman Collection
 
 on:
   push:
-    branches: [ "main" ] # Triggers automatically on push
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ] # Triggers automatically on PR
-  workflow_dispatch:     # Allows manual trigger via the GitHub UI (like clicking "Build Now" in Jenkins)
+    branches: [ "main" ]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test-api:
-    runs-on: ubuntu-24.04 # Standard clean runner agent
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout Code
@@ -35,12 +35,10 @@ jobs:
             --reporter-htmlextra-export index.html \
             --reporter-allure-export ./allure-results
 
-      # ➕ ADDED: Builds a single-file visual Allure HTML report
       - name: Generate Visual Allure Report
         if: always()
         run: npx allure generate ./allure-results --clean --single-file -o ./allure-report
 
-      # ➕ ADDED: Uploads the ready-to-open Allure HTML file as an artifact
       - name: Publish Visual Allure Report (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,14 +54,6 @@ jobs:
           name: Newman API Test Report
           path: index.html
 
-      - name: Publish Allure Results (Artifact)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results-${{ github.run_id }}
-          path: ./allure-results/
-          retention-days: 30
-
       - name: Setup Pages
         if: always()
         uses: actions/configure-pages@v4
@@ -72,5 +62,18 @@ jobs:
         if: always()
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Tells GitHub to upload the folder containing your index.html
+          path: '.'
+
+  # ➕ Deploys the uploaded index.html to your live github.io URL
+  deploy:
+    needs: test-api
+    if: always()
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
