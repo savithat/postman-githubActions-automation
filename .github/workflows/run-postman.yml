@@ -39,12 +39,20 @@ jobs:
         if: always()
         run: npx allure generate ./allure-results --clean --single-file -o ./allure-report
 
+      # ➕ ADDED: Places both HTML reports into a dedicated folder for GitHub Pages
+      - name: Prepare Both Reports for GitHub Pages
+        if: always()
+        run: |
+          mkdir -p ./pages-site
+          cp index.html ./pages-site/index.html
+          cp ./allure-report/index.html ./pages-site/allure.html
+
       - name: Publish Visual Allure Report (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: allure-visual-report-${{ github.run_id }}
-          path: ./allure-report/index.html
+          path: ./pages-site/allure.html
           retention-days: 30
 
       - name: Publish HTML Report (Artifact)
@@ -52,19 +60,19 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Newman API Test Report
-          path: index.html
+          path: ./pages-site/index.html
 
       - name: Setup Pages
         if: always()
         uses: actions/configure-pages@v4
 
+      # ➕ UPDATED: Uploads only the clean ./pages-site folder containing both URLs
       - name: Upload Pages Artifact
         if: always()
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './pages-site'
 
-  # ➕ Deploys the uploaded index.html to your live github.io URL
   deploy:
     needs: test-api
     if: always()
