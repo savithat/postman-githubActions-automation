@@ -32,20 +32,36 @@ jobs:
         run: |
           npx newman run "Booking_API_Workflow_postman_collection.json" \
             -r htmlextra,allure \
-            --reporter-htmlextra-export index.html \
+            --reporter-htmlextra-export newman.html \
             --reporter-allure-export ./allure-results
 
       - name: Generate Visual Allure Report
         if: always()
         run: npx allure generate ./allure-results --clean --single-file -o ./allure-report
 
-      # ➕ ADDED: Places both HTML reports into a dedicated folder for GitHub Pages
       - name: Prepare Both Reports for GitHub Pages
         if: always()
         run: |
           mkdir -p ./pages-site
-          cp index.html ./pages-site/index.html
+          cp newman.html ./pages-site/newman.html
           cp ./allure-report/index.html ./pages-site/allure.html
+          cat << 'EOF' > ./pages-site/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>API Test Reports</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 80px 20px; background-color: #f8f9fa;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              <h1 style="color: #24292f; margin-bottom: 10px;">Postman API Automation Reports</h1>
+              <p style="color: #57606a; margin-bottom: 35px;">Select a test execution dashboard to view:</p>
+              <a href="newman.html" style="display: inline-block; padding: 15px 28px; background: #FF6C37; color: white; text-decoration: none; border-radius: 8px; margin: 10px; font-weight: bold; font-size: 16px;">View Newman Report</a>
+              <a href="allure.html" style="display: inline-block; padding: 15px 28px; background: #2ECC71; color: white; text-decoration: none; border-radius: 8px; margin: 10px; font-weight: bold; font-size: 16px;">View Allure Report</a>
+            </div>
+          </body>
+          </html>
+          EOF
 
       - name: Publish Visual Allure Report (Artifact)
         if: always()
@@ -60,13 +76,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Newman API Test Report
-          path: ./pages-site/index.html
+          path: ./pages-site/newman.html
 
       - name: Setup Pages
         if: always()
         uses: actions/configure-pages@v4
 
-      # ➕ UPDATED: Uploads only the clean ./pages-site folder containing both URLs
       - name: Upload Pages Artifact
         if: always()
         uses: actions/upload-pages-artifact@v3
