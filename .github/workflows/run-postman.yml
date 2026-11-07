@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test-api:
-    runs-on: ubuntu-latest # Standard clean runner agent
+    runs-on: ubuntu-24.04 # Standard clean runner agent
 
     steps:
       - name: Checkout Code
@@ -23,11 +23,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # LTS stable version for CI runners
+          node-version: '24'
 
-      - name: Install Newman & Reporters
-        # ➕ ADDED: newman-reporter-allure
-        run: npm install newman newman-reporter-htmlextra newman-reporter-allure --legacy-peer-deps
+      - name: Install Newman, Reporters & Allure CLI
+        run: npm install newman newman-reporter-htmlextra newman-reporter-allure allure-commandline --legacy-peer-deps
 
       - name: Run Postman Collection
         run: |
@@ -36,6 +35,20 @@ jobs:
             --reporter-htmlextra-export index.html \
             --reporter-allure-export ./allure-results
 
+      # ➕ ADDED: Builds a single-file visual Allure HTML report
+      - name: Generate Visual Allure Report
+        if: always()
+        run: npx allure generate ./allure-results --clean --single-file -o ./allure-report
+
+      # ➕ ADDED: Uploads the ready-to-open Allure HTML file as an artifact
+      - name: Publish Visual Allure Report (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-visual-report-${{ github.run_id }}
+          path: ./allure-report/index.html
+          retention-days: 30
+
       - name: Publish HTML Report (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
@@ -43,7 +56,6 @@ jobs:
           name: Newman API Test Report
           path: index.html
 
-      # ➕ ADDED: Uploads the raw Allure results folder as an artifact
       - name: Publish Allure Results (Artifact)
         if: always()
         uses: actions/upload-artifact@v4
