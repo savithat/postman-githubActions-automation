@@ -7,7 +7,6 @@ on:
     branches: [ "main" ] # Triggers automatically on PR
   workflow_dispatch:     # Allows manual trigger via the GitHub UI (like clicking "Build Now" in Jenkins)
 
-# ➕ ADD THIS SECTION: Grants necessary permissions for GitHub Pages
 permissions:
   contents: read
   pages: write
@@ -26,36 +25,40 @@ jobs:
         with:
           node-version: '20' # LTS stable version for CI runners
 
-      - name: Install Newman & Reporter
-        run: npm install newman newman-reporter-htmlextra --legacy-peer-deps
+      - name: Install Newman & Reporters
+        # ➕ ADDED: newman-reporter-allure
+        run: npm install newman newman-reporter-htmlextra newman-reporter-allure --legacy-peer-deps
 
       - name: Run Postman Collection
         run: |
           npx newman run "Booking_API_Workflow_postman_collection.json" \
-            -r htmlextra \
-            --reporter-htmlextra-export index.html # 📝 CHANGE THIS to index.html so Pages serves it seamlessly
+            -r htmlextra,allure \
+            --reporter-htmlextra-export index.html \
+            --reporter-allure-export ./allure-results
 
       - name: Publish HTML Report (Artifact)
-        if: always() 
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Newman API Test Report
           path: index.html
 
-      # ➕ ADD THIS STEP: Configures the runner context for Pages
+      # ➕ ADDED: Uploads the raw Allure results folder as an artifact
+      - name: Publish Allure Results (Artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ github.run_id }}
+          path: ./allure-results/
+          retention-days: 30
+
       - name: Setup Pages
         if: always()
         uses: actions/configure-pages@v4
 
-      # ➕ ADD THIS STEP: Uploads the index.html specifically formatted for Pages
       - name: Upload Pages Artifact
         if: always()
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.' # Tells GitHub to upload the folder containing your index.html
-
-      # ➕ ADD THIS STEP: Triggers the actual live web deployment
-      - name: Deploy to GitHub Pages
-        if: always()
-        uses: actions/deploy-pages@v4
 
